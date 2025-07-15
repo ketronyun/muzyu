@@ -1,9 +1,11 @@
-using System;
+ï»¿using System;
 using System.Drawing.Drawing2D;
 using System.Security.Cryptography;
 using System.Windows.Forms;
 using MySql.Data.MySqlClient;
 using System.IO;
+using System.Net;
+using System.Net.Mail;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace muzyu
@@ -18,7 +20,7 @@ namespace muzyu
         {
             InitializeComponent();
 
-            comboBox1.Text = "Seçiniz...";
+            comboBox1.Text = "SeÃ§iniz...";
             comboBox1.Items.Add("@hotmail.com");
             comboBox1.Items.Add("@gmail.com");
 
@@ -26,14 +28,14 @@ namespace muzyu
             textBox2.PasswordChar = '*';
             textBox3.PasswordChar = '*';
             //======================================================================
-            //======================     Sql baglantý      =========================
+            //======================     Sql baglantÄ±      =========================
             //======================================================================
             string connStr = "server=localhost;user=root;database=muzyu;port=3306;password=12345678;";
             MySqlConnection conn = new MySqlConnection(connStr);
             try
             {
                 conn.Open();
-                MessageBox.Show("Baðlantý baþarýlý!");
+                MessageBox.Show("BaÄŸlantÄ± baÅŸarÄ±lÄ±!");
             }
             catch (Exception ex)
             {
@@ -132,11 +134,11 @@ namespace muzyu
         {
             if (checkBox1.Checked)
             {
-                //karakteri göster.
+                //karakteri gÃ¶ster.
                 textBox2.PasswordChar = '\0';
                 textBox3.PasswordChar = '\0';
             }
-            //deðilse karakterlerin yerine * koy.
+            //deÄŸilse karakterlerin yerine * koy.
             else
             {
                 textBox2.PasswordChar = '*';
@@ -146,39 +148,39 @@ namespace muzyu
 
         private void textBox1_TextChanged(object sender, EventArgs e)
         {
-            // TextChanged olayýný geçici olarak devre dýþý býrak
+            // TextChanged olayÄ±nÄ± geÃ§ici olarak devre dÄ±ÅŸÄ± bÄ±rak
             textBox1.TextChanged -= textBox1_TextChanged;
 
-            // @hotmail veya @gmail zaten eklenmiþse, iþlem yapma
+            // @hotmail veya @gmail zaten eklenmiÅŸse, iÅŸlem yapma
             if (textBox1.Text.Contains("@hotmail") || textBox1.Text.Contains("@gmail"))
             {
-                // TextChanged olayýný yeniden etkinleþtir
+                // TextChanged olayÄ±nÄ± yeniden etkinleÅŸtir
                 textBox1.TextChanged += textBox1_TextChanged;
-                return; // Ýþlem yapýlmadan çýk
+                return; // Ä°ÅŸlem yapÄ±lmadan Ã§Ä±k
             }
 
             if (textBox1.Text.Contains("@hot"))
             {
-                // @hot kýsmýný bul ve tamamla
+                // @hot kÄ±smÄ±nÄ± bul ve tamamla
                 textBox1.Text = textBox1.Text.Replace("@hot", "@hotmail.com");
                 comboBox1.Visible = false;
                 comboBox1.SelectedIndex = 0;
             }
             else if (textBox1.Text.Contains("@g"))
             {
-                // @g kýsmýný bul ve tamamla
+                // @g kÄ±smÄ±nÄ± bul ve tamamla
                 textBox1.Text = textBox1.Text.Replace("@g", "@gmail.com");
                 comboBox1.Visible = false;
                 comboBox1.SelectedIndex = 1;
             }
 
-            // TextChanged olayýný yeniden etkinleþtir
+            // TextChanged olayÄ±nÄ± yeniden etkinleÅŸtir
             textBox1.TextChanged += textBox1_TextChanged;
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
-            // TextChanged olayýný geçici olarak devre dýþý býrak
+            // TextChanged olayÄ±nÄ± geÃ§ici olarak devre dÄ±ÅŸÄ± bÄ±rak
             textBox1.TextChanged -= textBox1_TextChanged;
 
             if (comboBox1.SelectedItem != null && !textBox1.Text.Contains("@"))
@@ -187,7 +189,7 @@ namespace muzyu
                 comboBox1.Visible = false;
             }
 
-            // TextChanged olayýný yeniden baðla
+            // TextChanged olayÄ±nÄ± yeniden baÄŸla
             textBox1.TextChanged += textBox1_TextChanged;
         }
 
@@ -256,7 +258,7 @@ namespace muzyu
 
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(sifre))
             {
-                MessageBox.Show("Lütfen tüm alanlarý doldurun.");
+                MessageBox.Show("LÃ¼tfen tÃ¼m alanlarÄ± doldurun.");
                 return;
             }
 
@@ -277,19 +279,19 @@ namespace muzyu
                     {
                         string kullaniciAdi = reader["kad"].ToString();
 
-                        MessageBox.Show("Giriþ baþarýlý!");
+                        MessageBox.Show("GiriÅŸ baÅŸarÄ±lÄ±!");
 
                         // Oturumu dosyaya yaz 
                         System.IO.File.WriteAllText("MuZyuOturum.txt", email);
 
-                        // Ana sayfaya kullanýcý adýný gönder
+                        // Ana sayfaya kullanÄ±cÄ± adÄ±nÄ± gÃ¶nder
                         Anasayfa anasayfa = new Anasayfa(kullaniciAdi);
                         anasayfa.Show();
                         this.Hide();
                     }
                     else
                     {
-                        MessageBox.Show("E-posta veya þifre hatalý.");
+                        MessageBox.Show("E-posta veya ÅŸifre hatalÄ±.");
                     }
                 }
                 catch (Exception ex)
@@ -299,6 +301,49 @@ namespace muzyu
             }
         }
 
+        private void SendVerificationCode(string toEmail, string code)
+        {
+            try
+            {
+                MailMessage mail = new MailMessage();
+                SmtpClient smtpServer = new SmtpClient("smtp.gmail.com");
+
+                mail.From = new MailAddress("muzyu.music@gmail.com");
+                mail.To.Add(toEmail);
+                mail.Subject = "ðŸŽµ MuZyu'dan DoÄŸrulama Kodu!";
+
+                // HTML body ile resmi ve metni birlikte kullanÄ±yoruz
+                mail.IsBodyHtml = true;
+
+                // Harici bir resim URL'si kullanarak Ã¶rnek (Spotify logosu veya kendi logon)
+                string logoUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcROzCKYLMLZAHLjsGa2Fy6cCd6Y0UfIRF53pA&s";
+
+                mail.Body = $@"
+<div style='font-family: Arial, sans-serif; color: #1DB954;'>
+    <img src='{logoUrl}' alt='MuZyu Logo' style='width:250px; height:auto;' />
+    <h2>MuZyu ailesine hoÅŸ geldin {textBox4.Text} ! ðŸŽ‰</h2>
+    <p>HesabÄ±nÄ± oluÅŸturman iÃ§in gereken doÄŸrulama kodun:</p>
+    <h1 style='color:#191414;'>{code}</h1>
+    <p>Bu kodu 10 dakika iÃ§inde kullanmayÄ± unutma.</p>
+    <p>Herhangi bir sorun yaÅŸarsan bize ulaÅŸabilirsin.</p>
+    <p>Ä°yi mÃ¼zikler dileriz! ðŸŽ§<br />MuZyu Ekibi</p>
+</div>";
+
+
+                smtpServer.Port = 587;
+                smtpServer.Credentials = new NetworkCredential("muzyu.music@gmail.com", "wnla gupb gpwn ibmi ");
+                smtpServer.EnableSsl = true;
+
+                smtpServer.Send(mail);
+                MessageBox.Show("DoÄŸrulama kodu e-posta adresinize gÃ¶nderildi.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("E-posta gÃ¶nderilemedi: " + ex.Message);
+            }
+        }
+
+
 
 
         private void button2_Click(object sender, EventArgs e)
@@ -306,66 +351,75 @@ namespace muzyu
             string email = textBox1.Text.Trim();
             string sifre = textBox2.Text.Trim();
             string sifreTekrar = textBox3.Text.Trim();
-            string kad = textBox4.Text.Trim();       // Kullanýcý adý
-            string telefon = textBox5.Text.Trim();   // Telefon numarasý
+            string kad = textBox4.Text.Trim();
+            string telefon = textBox5.Text.Trim();
 
             if (string.IsNullOrWhiteSpace(email) || !email.Contains("@") ||
                 string.IsNullOrWhiteSpace(kad) || string.IsNullOrWhiteSpace(telefon))
             {
-                MessageBox.Show("Lütfen tüm alanlarý doldurun.");
+                MessageBox.Show("LÃ¼tfen tÃ¼m alanlarÄ± doldurun.");
                 return;
             }
 
             if (!(email.EndsWith("@hotmail.com") || email.EndsWith("@gmail.com")))
             {
-                MessageBox.Show("Lütfen geçerli bir e-posta uzantýsý girin.");
+                MessageBox.Show("LÃ¼tfen geÃ§erli bir e-posta uzantÄ±sÄ± girin.");
                 return;
             }
 
             if (sifre.Length < 8 || sifreTekrar.Length < 8)
             {
-                MessageBox.Show("Þifreniz en az 8 karakter olmalý!");
+                MessageBox.Show("Åžifreniz en az 8 karakter olmalÄ±!");
                 return;
             }
 
             if (sifre != sifreTekrar)
             {
-                MessageBox.Show("Þifreler uyuþmuyor!");
+                MessageBox.Show("Åžifreler uyuÅŸmuyor!");
                 return;
             }
 
-            string connStr = "server=localhost;user=root;database=muzyu;port=3306;password=12345678;";
-            using (MySqlConnection conn = new MySqlConnection(connStr))
+            string dogrulamaKodu = new Random().Next(100000, 999999).ToString();
+            SendVerificationCode(email, dogrulamaKodu);
+
+            VerificationForm verificationForm = new VerificationForm(email, dogrulamaKodu);
+            var sonuc = verificationForm.ShowDialog();
+
+            if (sonuc == DialogResult.OK)
             {
-                try
+                string connStr = "server=localhost;user=root;database=muzyu;port=3306;password=12345678;";
+                using (MySqlConnection conn = new MySqlConnection(connStr))
                 {
-                    conn.Open();
-
-                    string kontrolQuery = "SELECT * FROM kullanicilar WHERE email = @e";
-                    MySqlCommand kontrolCmd = new MySqlCommand(kontrolQuery, conn);
-                    kontrolCmd.Parameters.AddWithValue("@e", email);
-                    var reader = kontrolCmd.ExecuteReader();
-
-                    if (reader.HasRows)
+                    try
                     {
-                        MessageBox.Show("Bu e-posta zaten kayýtlý!");
-                        return;
+                        conn.Open();
+
+                        string kontrolQuery = "SELECT * FROM kullanicilar WHERE email = @e";
+                        MySqlCommand kontrolCmd = new MySqlCommand(kontrolQuery, conn);
+                        kontrolCmd.Parameters.AddWithValue("@e", email);
+                        var reader = kontrolCmd.ExecuteReader();
+
+                        if (reader.HasRows)
+                        {
+                            MessageBox.Show("Bu e-posta zaten kayÄ±tlÄ±!");
+                            return;
+                        }
+                        reader.Close();
+
+                        string insertQuery = "INSERT INTO kullanicilar (email, sifre, kad, telefon) VALUES (@e, @s, @k, @t)";
+                        MySqlCommand insertCmd = new MySqlCommand(insertQuery, conn);
+                        insertCmd.Parameters.AddWithValue("@e", email);
+                        insertCmd.Parameters.AddWithValue("@s", sifre);
+                        insertCmd.Parameters.AddWithValue("@k", kad);
+                        insertCmd.Parameters.AddWithValue("@t", telefon);
+                        insertCmd.ExecuteNonQuery();
+
+                        MessageBox.Show("KayÄ±t baÅŸarÄ±lÄ±!");
                     }
-                    reader.Close();
-
-                    string insertQuery = "INSERT INTO kullanicilar (email, sifre, kad, telefon) VALUES (@e, @s, @k, @t)";
-                    MySqlCommand insertCmd = new MySqlCommand(insertQuery, conn);
-                    insertCmd.Parameters.AddWithValue("@e", email);
-                    insertCmd.Parameters.AddWithValue("@s", sifre);
-                    insertCmd.Parameters.AddWithValue("@k", kad);
-                    insertCmd.Parameters.AddWithValue("@t", telefon);
-                    insertCmd.ExecuteNonQuery();
-
-                    MessageBox.Show("Kayýt baþarýlý!");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Hata: " + ex.Message);
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Hata: " + ex.Message);
+                    }
                 }
             }
 
